@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500&family=Zen+Kaku+Gothic+New:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<title>Tu lugar — Kōhi</title></head>
+<body><main>
+<div class="card">
+<div class="top"><span class="sub">Kōhi</span><button id="out">Cerrar sesión</button></div>
+<p class="msg error" id="err" role="alert"></p>
+<div id="panel" class="hidden">
+<h2 id="hi" style="margin-top:1.5rem"></h2>
+<p class="rank" id="rank"></p>
+<div class="bar" role="progressbar" aria-label="Progreso en la cola"><span id="fill"></span></div>
+<p class="barnote" id="note"></p>
+<div class="qr"><span id="qr"></span></div>
+<p class="barnote">Presenta este código el día de la apertura.</p>
+</div></div></main>
+<script>
+const token = localStorage.getItem('kohi_token');
+const $ = id => document.getElementById(id);
+$('out').onclick = () => { localStorage.removeItem('kohi_token'); location.href = 'index.html'; };
+if (!token) location.replace('login.html');
+else fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } }).then(async r => {
+  if (r.status === 401) { localStorage.removeItem('kohi_token'); location.replace('login.html'); return; }
+  if (!r.ok) throw new Error();
+  const u = await r.json();
+  $('hi').textContent = 'Hola, ' + u.name;
+  $('rank').innerHTML = 'Eres el <b>#' + u.position + '</b> de ' + u.total;
+  $('qr').textContent = 'QR-' + u.id;
+  $('note').textContent = u.position === 1 ? '¡Eres el primero en la fila!' : 'Hay ' + (u.position - 1) + ' persona(s) por delante de ti.';
+  $('panel').classList.remove('hidden');
+  const pct = Math.round((u.total - u.position + 1) / u.total * 100);
+  setTimeout(() => $('fill').style.width = pct + '%', 80);
+}).catch(() => { $('err').textContent = 'No se pudo cargar tu información. Inténtalo de nuevo.'; });
+</script></body></html>
